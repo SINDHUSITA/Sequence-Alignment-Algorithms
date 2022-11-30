@@ -33,7 +33,16 @@ var GridBuilder = (function () {
         mMatchScore = 0,
         mMismatchScore = 0,
         mGapScore = 0,
-        mAlignment = '';
+        mAlignment = '',
+        solutionList = {};  // solutionList is a list of all the solutions  . It is array of objects.    Each object has the following properties:
+// {
+    // startX: 0,
+    // startY: 0,
+    // endX: 0,
+    // endY: 0,
+    // path: [],
+    // alignment: "",
+// }
 
     function onCellClicked(dom, x, y) {
 
@@ -410,9 +419,299 @@ var GridBuilder = (function () {
 
     }
 
+    function globalAlignment( matchScore, mismatchScore, gapScore,mTopSequence, mSideSequence) {
+        console.log("globalAlignment");
+        var width = mTopSequence.length + 1;
+            var height = mSideSequence.length + 1;
+        solutionList=[];
+        for (var i = 0; i < width; i++) {
+            mPathTable[i] = [];
+            for (var j = 0; j < height; j++) {
+                if (i === 0 && j === 0) {
+                    mPathTable[i][j] = 0;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+
+                if (i === 0) {
+                    mPathTable[i][j] = j * gapScore;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+
+                if (j === 0) {
+                    mPathTable[i][j] = i * gapScore;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+        
+        var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
+        var comparisonScore = isMatch ? matchScore : mismatchScore;
+        var moveUpScore = mPathTable[i][j - 1] + gapScore;
+        var moveSdScore = mPathTable[i - 1][j] + gapScore;
+        var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
+        mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
+        var direction = [];
+
+        if (mPathTable[i][j] === moveDgScore) {
+            direction.push('z');
+        }
+
+        if (mPathTable[i][j] === moveUpScore) {
+            direction.push('u');
+        }
+
+        if (mPathTable[i][j] === moveSdScore) {
+            direction.push('s');
+        }
+
+        mCellMap[i + "_" + j] = {
+            'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
+            'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
+            'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
+                parseInt(comparisonScore, 10) +
+                " (Due to a " + (isMatch ? "match" : "mismatch") +
+                " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
+                " = " +
+                moveDgScore,
+            'sideScore': moveSdScore,
+            'upScore': moveUpScore,
+            'diagonalScore': moveDgScore,
+            'winningScore': mPathTable[i][j],
+            'direction': direction
+        };
+    }
+    }
+
+        var solution = {
+            startX: width -1,
+            startY: height -1,
+            endX: 0,
+            endY: 0,
+            score: mPathTable[width -1][height -1],
+            path: []
+
+        };
+        solutionList.push(solution);
+    }
+
+    function localAlignment( matchScore, mismatchScore, gapScore,mTopSequence, mSideSequence) {
+        console.log("localAlignment");
+        solutionList=[];
+        var width = mTopSequence.length + 1;
+        var height = mSideSequence.length + 1;
+
+        solutionList=[];
+        let max =  Number.NEGATIVE_INFINITY;
+        let maxI =0;
+        for (var i = 0; i < width; i++) {
+            mPathTable[i] = [];
+            for (var j = 0; j < height; j++) {
+                if (i==0 || j==0){
+                    mPathTable[i][j] = 0;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                } 
+                var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
+                var comparisonScore = isMatch ? matchScore : mismatchScore;
+                var moveUpScore = mPathTable[i][j - 1] + gapScore;
+                var moveSdScore = mPathTable[i - 1][j] + gapScore;
+                var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
+                mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore, 0);
+         
+                /*
+                This is important when the values collide
+                That is, we have two ways that both have the same score
+                The PHP implemention does something that works which is
+                
+                It assigns the diagonal the lowest priority, then the up score and then the side scores
+                
+                */
+
+
+                var direction = [];
+                if(mPathTable[i][j] === 0){
+                    direction.push('d'); // TODO : need to remove this as it is not a valid direction
+                }
+                else if (mPathTable[i][j] === moveDgScore) {
+                    direction.push('d');
+                }
+
+                else if (mPathTable[i][j] === moveUpScore) {
+                    direction.push('u');
+                }
+
+                else if (mPathTable[i][j] === moveSdScore) {
+                    direction.push('s');
+                }
+                
+
+                mCellMap[i + "_" + j] = {
+                    'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
+                    'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
+                    'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
+                        parseInt(comparisonScore, 10) +
+                        " (Due to a " + (isMatch ? "match" : "mismatch") +
+                        " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
+                        " = " +
+                        moveDgScore,
+                    'sideScore': moveSdScore,
+                    'upScore': moveUpScore,
+                    'diagonalScore': moveDgScore,
+                    'winningScore': mPathTable[i][j],
+                    'direction': direction
+                };
+                
+                if (mPathTable[i][j] > max) {
+                    max = mPathTable[i][j];
+                    maxI = i;
+                    solutionList = [];
+                    solutionList.push({
+                        startX: i,
+                        startY: j,
+                        endY: 0,
+                        score: max,
+                        path: []
+                    })
+                } else if (mPathTable[i][j] === max) {
+                    solutionList.push({
+                        startX: i,
+                        startY: j,
+                        endY: 0,
+                        score: max,
+                        path: []
+                    })
+                }
+
+            }
+        }
+        console.log(solutionList);
+
+    }
+
+    function fittingAlignment( matchScore, mismatchScore, gapScore,mTopSequence, mSideSequence) {
+        console.log("fitting");
+        var width = mTopSequence.length + 1;
+        var height = mSideSequence.length + 1;
+
+        solutionList=[];
+        
+        for (var i = 0; i < width; i++) {
+            mPathTable[i] = [];
+            for (var j = 0; j < height; j++) {
+                if (j===0){
+                    mPathTable[i][j] = 0;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                } 
+                else if (i === 0) {
+                    mPathTable[i][j] = j * gapScore;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+
+                var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
+                var comparisonScore = isMatch ? matchScore : mismatchScore;
+                var moveUpScore = mPathTable[i][j - 1] + gapScore;
+                var moveSdScore = mPathTable[i - 1][j] + gapScore;
+                var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
+                mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
+
+                /*
+                This is important when the values collide
+                That is, we have two ways that both have the same score
+                The PHP implemention does something that works which is
+                
+                It assigns the diagonal the lowest priority, then the up score and then the side scores
+                
+                */
+
+                /*
+                var direction = 'd';
+                if (mPathTable[i][j] === moveUpScore) {
+                    direction = 'u';
+                } else if (mPathTable[i][j] === moveSdScore) {
+                    direction = 's';
+                }
+                */
+
+                var direction = [];
+
+                if (mPathTable[i][j] === moveDgScore) {
+                    direction.push('d');
+                }
+
+                if (mPathTable[i][j] === moveUpScore) {
+                    direction.push('u');
+                }
+
+                if (mPathTable[i][j] === moveSdScore) {
+                    direction.push('s');
+                }
+
+                mCellMap[i + "_" + j] = {
+                    'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
+                    'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
+                    'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
+                        parseInt(comparisonScore, 10) +
+                        " (Due to a " + (isMatch ? "match" : "mismatch") +
+                        " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
+                        " = " +
+                        moveDgScore,
+                    'sideScore': moveSdScore,
+                    'upScore': moveUpScore,
+                    'diagonalScore': moveDgScore,
+                    'winningScore': mPathTable[i][j],
+                    'direction': direction
+                };
+
+            }
+        }
+        let max =  Number.NEGATIVE_INFINITY;
+        let maxI =0;
+        for (var i = 0; i < width; i++) {
+            if (mPathTable[i][height - 1] > max) {
+                max = mPathTable[i][height - 1];
+                maxI = i;
+                solutionList = [];
+                solutionList.push({
+                    startX: maxI,
+                    startY: height -1,
+                    endY: 0,
+                    score: max,
+                    path: []
+                })
+            } else if (mPathTable[i][height - 1] === max) {
+                solutionList.push({
+                    startX: i,
+                    startY: height -1,
+                    endY: 0,
+                    score: max,
+                    path: []
+                })
+            }
+        }
+        console.log(solutionList);
+
+    }
+
 
     mSelf = {
 
+        // TODO: Add your own tracebacks for highlighting the path
+        // TODO: Add method to handle first solution for local and fitting
         highlightOptimal: function () {
 
             mIsCustomPathMode = false;
@@ -489,128 +788,13 @@ var GridBuilder = (function () {
             mAlignment = alignment;
             var width = mTopSequence.length + 1;
             var height = mSideSequence.length + 1;
-
-            for (var i = 0; i < width; i++) {
-                mPathTable[i] = [];
-                for (var j = 0; j < height; j++) {
-                    console.log(mAlignment);
-                    if (mAlignment == 'global') {
-                        if (i === 0 && j === 0) {
-                            mPathTable[i][j] = 0;
-                            mCellMap[i + "_" + j] = {
-                                'winningScore': mPathTable[i][j]
-                            };
-                            continue;
-                        }
-
-                        if (i === 0) {
-                            mPathTable[i][j] = j * gapScore;
-                            mCellMap[i + "_" + j] = {
-                                'winningScore': mPathTable[i][j]
-                            };
-                            continue;
-                        }
-
-                        if (j === 0) {
-                            mPathTable[i][j] = i * gapScore;
-                            mCellMap[i + "_" + j] = {
-                                'winningScore': mPathTable[i][j]
-                            };
-                            continue;
-                        }
-                    }
-                    if (mAlignment == 'fitting') {
-
-                        if (i === 0) {
-                            mPathTable[i][j] = 0;
-                            mCellMap[i + "_" + j] = {
-                                'winningScore': mPathTable[i][j]
-                            };
-                            continue;
-                        }
-
-                        if (i != 0 && j === 0) {
-                            mPathTable[i][j] = i * gapScore;
-                            mCellMap[i + "_" + j] = {
-                                'winningScore': mPathTable[i][j]
-                            };
-                            continue;
-                        }
-                    }
-                    if (mAlignment == 'local') {
-                        if (i === 0 || j === 0) {
-                            mPathTable[i][j] = 0;
-                            mCellMap[i + "_" + j] = {
-                                'winningScore': mPathTable[i][j]
-                            };
-                            continue;
-                        }
-                    }
-
-                    var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
-                    var comparisonScore = isMatch ? matchScore : mismatchScore;
-                    /*
-                    console.log(
-                        "Processing cell(" + i + ", " + j + ")\n" 
-                        + "Side score is " + (mPathTable[i-1][j] + gapScore) + "\n"
-                        + "Up score is " + (mPathTable[i][j-1] + gapScore) + "\n"
-                        + "Diag score is " + (comparisonScore + mPathTable[i-1][j-1]) + "\n"
-                    );
-                    */
-                    var moveUpScore = mPathTable[i][j - 1] + gapScore;
-                    var moveSdScore = mPathTable[i - 1][j] + gapScore;
-                    var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
-                    mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
-
-                    /*
-                    This is important when the values collide
-                    That is, we have two ways that both have the same score
-                    The PHP implemention does something that works which is
-                    
-                    It assigns the diagonal the lowest priority, then the up score and then the side scores
-                    
-                    */
-
-                    /*
-                    var direction = 'd';
-                    if (mPathTable[i][j] === moveUpScore) {
-                        direction = 'u';
-                    } else if (mPathTable[i][j] === moveSdScore) {
-                        direction = 's';
-                    }
-                    */
-
-                    var direction = [];
-
-                    if (mPathTable[i][j] === moveDgScore) {
-                        direction.push('d');
-                    }
-
-                    if (mPathTable[i][j] === moveUpScore) {
-                        direction.push('u');
-                    }
-
-                    if (mPathTable[i][j] === moveSdScore) {
-                        direction.push('s');
-                    }
-
-                    mCellMap[i + "_" + j] = {
-                        'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
-                        'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
-                        'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
-                            parseInt(comparisonScore, 10) +
-                            " (Due to a " + (isMatch ? "match" : "mismatch") +
-                            " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
-                            " = " +
-                            moveDgScore,
-                        'sideScore': moveSdScore,
-                        'upScore': moveUpScore,
-                        'diagonalScore': moveDgScore,
-                        'winningScore': mPathTable[i][j],
-                        'direction': direction
-                    };
-
-                }
+  
+            if(mAlignment == 'local') {
+                localAlignment(matchScore, mismatchScore, gapScore,mTopSequence, mSideSequence);
+            } else if(mAlignment == 'fitting') {
+                fittingAlignment( matchScore, mismatchScore, gapScore,mTopSequence, mSideSequence);
+            } else {    
+                globalAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence);
             }
 
             constructGrid();
