@@ -13,8 +13,11 @@
     function restart() {
         clear();
         var alignment = $('#Alignments').val();
-        if(alignment == "global")
-            GridBuilder.highlightOptimal();
+        if(alignment=="global")
+            GridBuilder.highlightOptimal(); 
+        else {
+            GridBuilder.showSolution();
+        }
     }
 
     function clear() {
@@ -108,6 +111,9 @@
     </tr>
 
 </table>
+<div id="solution">
+
+</div>
 <div id="cont"></div>
 </body>
 

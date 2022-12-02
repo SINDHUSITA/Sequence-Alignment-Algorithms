@@ -754,6 +754,25 @@ var GridBuilder = (function () {
 
         },
 
+        showSolution: function () {
+            // Get the dom element with id solution
+            var solution = $('#solution');
+            //clear the solution div
+            solution.empty();   
+            //  add one entry for each solution 
+            for (var i = 0; i < solutionList.length; i++) {
+                var solutionEntry = solutionList[i];
+                var currentDom = $('#' + solutionEntry.startX + '_' + solutionEntry.startY);
+                //Add class to the dom element
+                currentDom.addClass('highlight-permenant');
+                var solutionEntryDom = $('<div class="solution-entry"></div>');
+                solutionEntryDom.append('<div class="solution-entry-score">Score: ' + solutionEntry.score + '</div>');
+                solutionEntryDom.append('<div class="solution-entry-path">Coordinates of traceback start points: ( ' + solutionEntry.startX+ ","+ solutionEntry.startY + ')</div>');
+                solution.append(solutionEntryDom);
+            }
+            
+        },
+
         startCustomPath: function () {
             this.rebuildTable(mDomContainer, mDomResultContainer, mMatchScore, mMismatchScore, mGapScore, mSideSequence, mTopSequence, mAlignment);
             mIsCustomPathMode = true;
