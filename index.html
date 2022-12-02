@@ -12,7 +12,9 @@
 <script>
     function restart() {
         clear();
-        GridBuilder.highlightOptimal();
+        var alignment = $('#Alignments').val();
+        if(alignment == "global")
+            GridBuilder.highlightOptimal();
     }
 
     function clear() {
