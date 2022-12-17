@@ -44,7 +44,7 @@ var GridBuilder = (function () {
     // alignmentSideSequence: "",
     // alignmentTopSequence: "",
     // }
-    currentSolution = 0; // currentSolution is the index of the current solution in the solutionList array
+    mCurrentSolutionIndex = 0; // currentSolution is the index of the current solution in the solutionList array
 
     function onCellClicked(dom, x, y) {
 
@@ -177,6 +177,12 @@ var GridBuilder = (function () {
 
         var score = 0;
         var $tr = $('<tr />');
+        for (var idxSide in alignedSideSeq) {
+            $tr.append($('<td />').html(alignedSideSeq[idxSide]));
+        }
+        $table.append($tr);
+
+        $tr = $('<tr />');
         for (var idxTop in alignedTopSeq) {
             var c1 = alignedTopSeq[idxTop];
             var c2 = alignedSideSeq[idxTop];
@@ -193,12 +199,8 @@ var GridBuilder = (function () {
             }
             $tr.append($('<td />').html(c1));
         }
-        $table.append($tr);
-
-        $tr = $('<tr />');
-        for (var idxSide in alignedSideSeq) {
-            $tr.append($('<td />').html(alignedSideSeq[idxSide]));
-        }
+       
+      
         $table.append($tr);
 
         $tr = $('<tr />');
@@ -206,29 +208,7 @@ var GridBuilder = (function () {
         $table.append($tr);
 
         mDomResultContainer.append($table);
-        // create buttons for next and previous  to  get next solution and highlight and append to the table
-        var $buttonPrevious = $('<button />').attr('id', 'previous').html('Previous');
-        var $buttonNext = $('<button />').attr('id', 'next').html('Next');
-        $table.append($buttonPrevious);
-        $table.append($buttonNext);
-        $buttonPrevious.click(function () {
-            if (mCurrentSolutionIndex > 0) {
-                mCurrentSolutionIndex--;
-                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex]);  
-                
-             }
-        } );
-        $buttonNext.click(function () {
-            if (mCurrentSolutionIndex < mSolutions.length - 1) {
-                mCurrentSolutionIndex++;
-                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex])
-            }
-        }
-        );
-
-
-
-
+       
     }
 
     function displayTooltip(text, x, y) {
@@ -613,7 +593,6 @@ var GridBuilder = (function () {
 
             }
         }
-        console.log(solutionList);
         traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[0], "local");
        
     }
@@ -650,15 +629,16 @@ var GridBuilder = (function () {
                 mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
                 var direction = [];
 
+                // TODO : decide on the order of the directions
                 if (mPathTable[i][j] === moveDgScore) {
                     direction.push('d');
                 }
 
-                if (mPathTable[i][j] === moveUpScore) {
+                else if (mPathTable[i][j] === moveUpScore) {
                     direction.push('u');
                 }
 
-                if (mPathTable[i][j] === moveSdScore) {
+                else if (mPathTable[i][j] === moveSdScore) {
                     direction.push('s');
                 }
 
@@ -728,14 +708,14 @@ var GridBuilder = (function () {
 
         }else if(mCellMap[i+"_"+j].direction.includes('s')){
             new_v.push('-')
-            new_w.push(mSideSequence[j-1])
-            path.push([i,j-1])
-            j--;
-        }else if(mCellMap[i+"_"+j].direction.includes('u')){
-            new_v.push(mTopSequence[i-1])
-            new_w.push('-')
+            new_w.push(mSideSequence[i-1])
             path.push([i-1,j])
             i--;
+        }else if(mCellMap[i+"_"+j].direction.includes('u')){
+            new_v.push(mTopSequence[j-1])
+            new_w.push('-')
+            path.push([i,j-1])
+            j--;
         } else if(mCellMap[i+"_"+j].direction.includes('z') && algorithm === "local" && mCellMap[i+"_"+j].winningScore === 0){
             break;
         }
@@ -762,6 +742,45 @@ var GridBuilder = (function () {
             // }
            
         }   
+        addPreviousAndNextButtons();
+    }
+
+    function addPreviousAndNextButtons(){
+        // remove the previous and next buttons if they exist
+        $('.prev-next').remove();
+
+        // add the previous and next buttons
+        var prevNextDiv = document.createElement("div");
+        prevNextDiv.className = "prev-next";
+        var prevButton = document.createElement("button");
+        prevButton.innerHTML = "Previous";
+        prevButton.onclick = function(){
+            if(mCurrentSolutionIndex > 0){
+                mCurrentSolutionIndex--;
+                mCurrentPath = [];
+                $('.in-path').removeClass('in-path');   // remove all the highlighted path
+                // remove the class is-last from the table
+                $('.is-last').removeClass('is-last');
+                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex],"local");  
+                highlightOptimalPath(solutionList[mCurrentSolutionIndex]);
+            }
+        }
+        var nextButton = document.createElement("button");
+        nextButton.innerHTML = "Next";
+        nextButton.onclick = function(){
+            if(mCurrentSolutionIndex < solutionList.length-1){
+                mCurrentSolutionIndex++;
+                mCurrentPath = [];
+                $('.in-path').removeClass('in-path');   // remove all the highlighted path
+                // remove the class is-last from the table
+                $('.is-last').removeClass('is-last');
+                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex],"local");  
+                highlightOptimalPath(solutionList[mCurrentSolutionIndex]);
+            }
+        }
+        prevNextDiv.append(prevButton);
+        prevNextDiv.append(nextButton);
+        mDomResultContainer.append(prevNextDiv);
     }
 
 
@@ -825,32 +844,13 @@ var GridBuilder = (function () {
 
         },
 
-        // showSolution: function () {
-        //     // Get the dom element with id solution
-        //     var solution = $('#solution');
-        //     //clear the solution div
-        //     solution.empty();   
-        //     //  add one entry for each solution 
-        //     for (var i = 0; i < solutionList.length; i++) {
-        //         var solutionEntry = solutionList[i];
-        //         var currentDom = $('#' + solutionEntry.startX + '_' + solutionEntry.startY);
-        //         //Add class to the dom element
-        //         currentDom.addClass('highlight-permenant');
-        //         var solutionEntryDom = $('<div class="solution-entry"></div>');
-        //         solutionEntryDom.append('<div class="solution-entry-score">Score: ' + solutionEntry.score + '</div>');
-        //         solutionEntryDom.append('<div class="solution-entry-path">Coordinates of traceback start points: ( ' + solutionEntry.startX+ ","+ solutionEntry.startY + ')</div>');
-        //         solution.append(solutionEntryDom);
-        //     }
-            
-        // },
-
         startCustomPath: function () {
             this.rebuildTable(mDomContainer, mDomResultContainer, mMatchScore, mMismatchScore, mGapScore, mSideSequence, mTopSequence, mAlignment);
             mIsCustomPathMode = true;
         },
        
         rebuildTable: function (domContainer, resultContainer, matchScore, mismatchScore, gapScore, seqSide, seqTop, alignment) {
-
+            mCurrentSolutionIndex = 0;
             if (mIsFirstCall) {
                 $(window).mousemove(function (e) {
                     window.mouseXPos = e.pageX;
