@@ -34,15 +34,17 @@ var GridBuilder = (function () {
         mMismatchScore = 0,
         mGapScore = 0,
         mAlignment = '',
-        solutionList = {}; // solutionList is a list of all the solutions  . It is array of objects.    Each object has the following properties:
+        solutionList = {}, // solutionList is a list of all the solutions  . It is array of objects.    Each object has the following properties:
     // {
     // startX: 0,
     // startY: 0,
     // endX: 0,
     // endY: 0,
     // path: [],
-    // alignment: "",
+    // alignmentSideSequence: "",
+    // alignmentTopSequence: "",
     // }
+    currentSolution = 0; // currentSolution is the index of the current solution in the solutionList array
 
     function onCellClicked(dom, x, y) {
 
@@ -204,6 +206,28 @@ var GridBuilder = (function () {
         $table.append($tr);
 
         mDomResultContainer.append($table);
+        // create buttons for next and previous  to  get next solution and highlight and append to the table
+        var $buttonPrevious = $('<button />').attr('id', 'previous').html('Previous');
+        var $buttonNext = $('<button />').attr('id', 'next').html('Next');
+        $table.append($buttonPrevious);
+        $table.append($buttonNext);
+        $buttonPrevious.click(function () {
+            if (mCurrentSolutionIndex > 0) {
+                mCurrentSolutionIndex--;
+                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex]);  
+                
+             }
+        } );
+        $buttonNext.click(function () {
+            if (mCurrentSolutionIndex < mSolutions.length - 1) {
+                mCurrentSolutionIndex++;
+                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex])
+            }
+        }
+        );
+
+
+
 
     }
 
@@ -460,7 +484,7 @@ var GridBuilder = (function () {
                 var direction = [];
 
                 if (mPathTable[i][j] === moveDgScore) {
-                    direction.push('z');
+                    direction.push('d');
                 }
 
                 if (mPathTable[i][j] === moveUpScore) {
@@ -499,6 +523,7 @@ var GridBuilder = (function () {
 
         };
         solutionList.push(solution);
+        traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solution);
     }
 
     function localAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
@@ -539,7 +564,7 @@ var GridBuilder = (function () {
 
                 var direction = [];
                 if (mPathTable[i][j] === 0) {
-                    direction.push('d'); // TODO : need to remove this as it is not a valid direction
+                    direction.push('z'); // TODO : need to remove this as it is not a valid direction
                 } else if (mPathTable[i][j] === moveDgScore) {
                     direction.push('d');
                 } else if (mPathTable[i][j] === moveUpScore) {
@@ -589,7 +614,8 @@ var GridBuilder = (function () {
             }
         }
         console.log(solutionList);
-
+        traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[0], "local");
+       
     }
 
     function fittingAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
@@ -618,29 +644,10 @@ var GridBuilder = (function () {
 
                 var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
                 var comparisonScore = isMatch ? matchScore : mismatchScore;
-                var moveUpScore = mPathTable[i][j - 1] + gapScore;
-                var moveSdScore = mPathTable[i - 1][j] + gapScore;
+                var moveUpScore = mPathTable[i-1][j ] + gapScore;
+                var moveSdScore = mPathTable[i ][j-1] + gapScore;
                 var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
                 mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
-
-                /*
-                This is important when the values collide
-                That is, we have two ways that both have the same score
-                The PHP implemention does something that works which is
-                
-                It assigns the diagonal the lowest priority, then the up score and then the side scores
-                
-                */
-
-                /*
-                var direction = 'd';
-                if (mPathTable[i][j] === moveUpScore) {
-                    direction = 'u';
-                } else if (mPathTable[i][j] === moveSdScore) {
-                    direction = 's';
-                }
-                */
-
                 var direction = [];
 
                 if (mPathTable[i][j] === moveDgScore) {
@@ -698,12 +705,76 @@ var GridBuilder = (function () {
             }
         }
         console.log(solutionList);
+        traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[0]);
+    }
+
+    function traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solution, algorithm) {
+        console.log("traceback");
+    var i= solution.startX;
+    var j= solution.startY;
+    var new_v = []
+    var new_w = []
+    var path = []
+    path.push([i,j])
+
+    while(true){
+    
+        if(mCellMap[i+"_"+j].direction.includes('d')){
+            new_v.push(mTopSequence[i-1])
+            new_w.push(mSideSequence[j-1])
+            path.push([i-1,j-1])
+            i--;
+            j--;
+
+        }else if(mCellMap[i+"_"+j].direction.includes('s')){
+            new_v.push('-')
+            new_w.push(mSideSequence[j-1])
+            path.push([i,j-1])
+            j--;
+        }else if(mCellMap[i+"_"+j].direction.includes('u')){
+            new_v.push(mTopSequence[i-1])
+            new_w.push('-')
+            path.push([i-1,j])
+            i--;
+        } else if(mCellMap[i+"_"+j].direction.includes('z') && algorithm === "local" && mCellMap[i+"_"+j].winningScore === 0){
+            break;
+        }
+        if(i<=0 || j<=0){
+            break;
+        }
+      
+    }
+    console.log(path, new_v, 
+        new_w)
+    solution.path = path;
+    solution.alignedSideSequence = new_w.reverse().join('');
+    solution.alignedTopSequence = new_v.reverse().join('');
 
     }
 
+    function highlightOptimalPath(solutionEntry) {
+        console.log("highlightOptimal");
+        for(var i=0;i<solutionEntry.path.length;i++){
+            // if(solutionEntry.path[i][0]>0 && solutionEntry.path[i][1]>0){
+                var currentCell = mCellMap[solutionEntry.path[i][0] + '_' + solutionEntry.path[i][1]];
+                var currentDom = $('#' + solutionEntry.path[i][0] + '_' + solutionEntry.path[i][1]);
+                currentDom.click();
+            // }
+           
+        }   
+    }
+
+
+
+
+
 
     mSelf = {
+        highlightPath: function () {
+          highlightOptimalPath(solutionList[0]); 
+        },
 
+        
         // TODO: Add your own tracebacks for highlighting the path
         // TODO: Add method to handle first solution for local and fitting
         highlightOptimal: function () {
@@ -754,30 +825,30 @@ var GridBuilder = (function () {
 
         },
 
-        showSolution: function () {
-            // Get the dom element with id solution
-            var solution = $('#solution');
-            //clear the solution div
-            solution.empty();   
-            //  add one entry for each solution 
-            for (var i = 0; i < solutionList.length; i++) {
-                var solutionEntry = solutionList[i];
-                var currentDom = $('#' + solutionEntry.startX + '_' + solutionEntry.startY);
-                //Add class to the dom element
-                currentDom.addClass('highlight-permenant');
-                var solutionEntryDom = $('<div class="solution-entry"></div>');
-                solutionEntryDom.append('<div class="solution-entry-score">Score: ' + solutionEntry.score + '</div>');
-                solutionEntryDom.append('<div class="solution-entry-path">Coordinates of traceback start points: ( ' + solutionEntry.startX+ ","+ solutionEntry.startY + ')</div>');
-                solution.append(solutionEntryDom);
-            }
+        // showSolution: function () {
+        //     // Get the dom element with id solution
+        //     var solution = $('#solution');
+        //     //clear the solution div
+        //     solution.empty();   
+        //     //  add one entry for each solution 
+        //     for (var i = 0; i < solutionList.length; i++) {
+        //         var solutionEntry = solutionList[i];
+        //         var currentDom = $('#' + solutionEntry.startX + '_' + solutionEntry.startY);
+        //         //Add class to the dom element
+        //         currentDom.addClass('highlight-permenant');
+        //         var solutionEntryDom = $('<div class="solution-entry"></div>');
+        //         solutionEntryDom.append('<div class="solution-entry-score">Score: ' + solutionEntry.score + '</div>');
+        //         solutionEntryDom.append('<div class="solution-entry-path">Coordinates of traceback start points: ( ' + solutionEntry.startX+ ","+ solutionEntry.startY + ')</div>');
+        //         solution.append(solutionEntryDom);
+        //     }
             
-        },
+        // },
 
         startCustomPath: function () {
             this.rebuildTable(mDomContainer, mDomResultContainer, mMatchScore, mMismatchScore, mGapScore, mSideSequence, mTopSequence, mAlignment);
             mIsCustomPathMode = true;
         },
-
+       
         rebuildTable: function (domContainer, resultContainer, matchScore, mismatchScore, gapScore, seqSide, seqTop, alignment) {
 
             if (mIsFirstCall) {
