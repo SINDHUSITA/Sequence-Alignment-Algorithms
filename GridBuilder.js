@@ -32,7 +32,19 @@ var GridBuilder = (function () {
         mIsCustomPathMode = false,
         mMatchScore = 0,
         mMismatchScore = 0,
-        mGapScore = 0;
+        mGapScore = 0,
+        mAlignment = '',
+        solutionList = {}, // solutionList is a list of all the solutions  . It is array of objects.    Each object has the following properties:
+    // {
+    // startX: 0,
+    // startY: 0,
+    // endX: 0,
+    // endY: 0,
+    // path: [],
+    // alignmentSideSequence: "",
+    // alignmentTopSequence: "",
+    // }
+    mCurrentSolutionIndex = 0; // currentSolution is the index of the current solution in the solutionList array
 
     function onCellClicked(dom, x, y) {
 
@@ -105,13 +117,11 @@ var GridBuilder = (function () {
 
     function onPathUpdate() {
 
-        //console.log("Path Updated ========");
         var alignedTopSeq = '';
         var alignedSideSeq = '';
 
 
         $('th').removeClass('included');
-        
         for (var i = mCurrentPath.length - 1; i >= 0; i--) {
 
             var currentCell = mCurrentPath[i];
@@ -119,20 +129,18 @@ var GridBuilder = (function () {
 
             var topChar = mTopSequence[currentCell.x];
             var sideChar = mSideSequence[currentCell.y];
-            
-            
             if (!nextCell) {
                 continue;
             }
 
-            if(topChar){
-                if(currentCell.x != nextCell.x){
+            if (topChar) {
+                if (currentCell.x != nextCell.x) {
                     $('#top_seq_' + (currentCell.x)).addClass('included');
                 }
             }
 
-            if(sideChar){
-                if(currentCell.y != nextCell.y){
+            if (sideChar) {
+                if (currentCell.y != nextCell.y) {
                     $('#side_seq_' + (currentCell.y)).addClass('included');
                 }
             }
@@ -164,10 +172,33 @@ var GridBuilder = (function () {
 
         var $table = $('<table />').attr('id', 'alignment');
         mDomAlignmentTable = $table;
-        //mDomAlignmentTable.width( mDomGridTable.width() );
 
         var score = 0;
+        // add row to show total number of solutions
         var $tr = $('<tr />');
+         // add underline to first row
+        $tr.addClass('underline');
+
+        // add cell spanning all columns to show total number of solutions
+        $tr.append($('<td />').attr('colspan', mSideSequence.length + 1).html('Total solutions: ' + solutionList.length));
+
+        $table.append($tr);
+       
+
+
+        // add row to show current solution number
+        $tr = $('<tr />');
+        $tr.append($('<td />').attr('colspan', mSideSequence.length + 1).html('Current solution: ' + (mCurrentSolutionIndex + 1)));
+        $table.append($tr);
+
+
+         $tr = $('<tr />');
+        for (var idxSide in alignedSideSeq) {
+            $tr.append($('<td />').html(alignedSideSeq[idxSide]));
+        }
+        $table.append($tr);
+
+        $tr = $('<tr />');
         for (var idxTop in alignedTopSeq) {
             var c1 = alignedTopSeq[idxTop];
             var c2 = alignedSideSeq[idxTop];
@@ -184,12 +215,8 @@ var GridBuilder = (function () {
             }
             $tr.append($('<td />').html(c1));
         }
-        $table.append($tr);
-
-        $tr = $('<tr />');
-        for (var idxSide in alignedSideSeq) {
-            $tr.append($('<td />').html(alignedSideSeq[idxSide]));
-        }
+       
+      
         $table.append($tr);
 
         $tr = $('<tr />');
@@ -197,7 +224,7 @@ var GridBuilder = (function () {
         $table.append($tr);
 
         mDomResultContainer.append($table);
-
+       
     }
 
     function displayTooltip(text, x, y) {
@@ -256,17 +283,17 @@ var GridBuilder = (function () {
     }
 
     function getCssClassesFromDirection(directions) {
-        
+
         var cssClasses = "";
 
-        if(!Array.isArray(directions)){
+        if (!Array.isArray(directions)) {
             return cssClasses;
         }
 
         cssClasses = directions.join(' ');
 
         return cssClasses;
-        
+
     }
 
     function constructNRow(n) {
@@ -298,10 +325,10 @@ var GridBuilder = (function () {
         for (var idx in mTopSequence) {
             idx = parseInt(idx, 10);
             var dataPointIndex = (idx + 1) + '_' + (charIndex + 1);
-            
+
             var cssClasses = "";
-            if(n > 0){
-                cssClasses = getCssClassesFromDirection(mCellMap[(idx+1) + "_" + (charIndex+ 1)].direction);
+            if (n > 0) {
+                cssClasses = getCssClassesFromDirection(mCellMap[(idx + 1) + "_" + (charIndex + 1)].direction);
             }
 
             $td = $('<td />')
@@ -353,7 +380,7 @@ var GridBuilder = (function () {
             constructNRow(i);
         }
 
-        $('#grid td').click(function() {
+        $('#grid td').click(function () {
             var self = $(this);
             onCellClicked(
                 self,
@@ -362,60 +389,424 @@ var GridBuilder = (function () {
             );
         });
 
-        $('#grid td').hover(function() {
-            
+        $('#grid td').hover(function () {
+
             if (mIsCustomPathMode) {
                 return;
             }
-            
+
             var self = $(this);
             var x = self.attr('data-x');
             var y = self.attr('data-y');
-            
+
             if (x < 1 || y < 1) {
                 return;
             }
-            //console.log(           "#side_seq_" + (y -1));
-            //console.log(           "#top_seq_" + (x -1));
-            $("#side_seq_" + (y-1)).addClass('highlight');
-            $("#top_seq_" + (x-1)).addClass('highlight');
-            
+            $("#side_seq_" + (y - 1)).addClass('highlight');
+            $("#top_seq_" + (x - 1)).addClass('highlight');
+
             showTooltip(x, y);
-        
-        }, function() {
-        
+
+        }, function () {
+
             $(".seq-header").removeClass('highlight');
             $('#grid td').removeClass('highlight');
             $('#grid td').removeClass('highlight-main');
             hideTooltip();
-            
+
         });
 
-        $('#grid th').hover(function() {
-            
+        $('#grid th').hover(function () {
+
             var self = $(this);
-            if(!self.hasClass("seq-header")){
+            if (!self.hasClass("seq-header")) {
                 return;
             }
-            
+
             var pos = self.offset();
-            var topMargin = self.hasClass("side-header")?self.height()/4:self.height() + 4;
-            var leftMargin = self.hasClass("side-header")?self.width() + 4:0;
-            var text = self.hasClass("included")?"Included In Alignment":"Not Included In Alignment";
-            
-            displayTooltip(text, pos.left + leftMargin, pos.top + topMargin );
-            
-        }, function() {
+            var topMargin = self.hasClass("side-header") ? self.height() / 4 : self.height() + 4;
+            var leftMargin = self.hasClass("side-header") ? self.width() + 4 : 0;
+            var text = self.hasClass("included") ? "Included In Alignment" : "Not Included In Alignment";
+
+            displayTooltip(text, pos.left + leftMargin, pos.top + topMargin);
+
+        }, function () {
             hideTooltip();
         });
 
 
     }
 
+    function globalAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
+        var width = mTopSequence.length + 1;
+        var height = mSideSequence.length + 1;
+        solutionList = [];
+        for (var i = 0; i < width; i++) {
+            mPathTable[i] = [];
+            for (var j = 0; j < height; j++) {
+                if (i === 0 && j === 0) {
+                    mPathTable[i][j] = 0;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+
+                if (i === 0) {
+                    mPathTable[i][j] = j * gapScore;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+
+                if (j === 0) {
+                    mPathTable[i][j] = i * gapScore;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+
+                var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
+                var comparisonScore = isMatch ? matchScore : mismatchScore;
+                var moveUpScore = mPathTable[i][j - 1] + gapScore;
+                var moveSdScore = mPathTable[i - 1][j] + gapScore;
+                var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
+                mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
+                var direction = [];
+
+                if (mPathTable[i][j] === moveDgScore) {
+                    direction.push('d');
+                }
+
+                if (mPathTable[i][j] === moveUpScore) {
+                    direction.push('u');
+                }
+
+                if (mPathTable[i][j] === moveSdScore) {
+                    direction.push('s');
+                }
+
+                mCellMap[i + "_" + j] = {
+                    'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
+                    'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
+                    'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
+                        parseInt(comparisonScore, 10) +
+                        " (Due to a " + (isMatch ? "match" : "mismatch") +
+                        " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
+                        " = " +
+                        moveDgScore,
+                    'sideScore': moveSdScore,
+                    'upScore': moveUpScore,
+                    'diagonalScore': moveDgScore,
+                    'winningScore': mPathTable[i][j],
+                    'direction': direction
+                };
+            }
+        }
+
+        var solution = {
+            startX: width - 1,
+            startY: height - 1,
+            endX: 0,
+            endY: 0,
+            score: mPathTable[width - 1][height - 1],
+            path: []
+
+        };
+        solutionList.push(solution);
+        traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solution);
+    }
+
+    function localAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
+        solutionList = [];
+        var width = mTopSequence.length + 1;
+        var height = mSideSequence.length + 1;
+
+        solutionList = [];
+        let max = Number.NEGATIVE_INFINITY;
+        let maxI = 0;
+        for (var i = 0; i < width; i++) {
+            mPathTable[i] = [];
+            for (var j = 0; j < height; j++) {
+                if (i == 0 || j == 0) {
+                    mPathTable[i][j] = 0;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                }
+                var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
+                var comparisonScore = isMatch ? matchScore : mismatchScore;
+                var moveUpScore = mPathTable[i][j - 1] + gapScore;
+                var moveSdScore = mPathTable[i - 1][j] + gapScore;
+                var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
+                mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore, 0);
+
+                /*
+                This is important when the values collide
+                That is, we have two ways that both have the same score
+                The PHP implemention does something that works which is
+                
+                It assigns the diagonal the lowest priority, then the up score and then the side scores
+                
+                */
+
+
+                var direction = [];
+                if (mPathTable[i][j] === 0) {
+                    direction.push('z'); // TODO : need to remove this as it is not a valid direction
+                } else if (mPathTable[i][j] === moveDgScore) {
+                    direction.push('d');
+                } else if (mPathTable[i][j] === moveUpScore) {
+                    direction.push('u');
+                } else if (mPathTable[i][j] === moveSdScore) {
+                    direction.push('s');
+                }
+
+
+                mCellMap[i + "_" + j] = {
+                    'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
+                    'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
+                    'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
+                        parseInt(comparisonScore, 10) +
+                        " (Due to a " + (isMatch ? "match" : "mismatch") +
+                        " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
+                        " = " +
+                        moveDgScore,
+                    'sideScore': moveSdScore,
+                    'upScore': moveUpScore,
+                    'diagonalScore': moveDgScore,
+                    'winningScore': mPathTable[i][j],
+                    'direction': direction
+                };
+
+                if (mPathTable[i][j] > max) {
+                    max = mPathTable[i][j];
+                    maxI = i;
+                    solutionList = [];
+                    solutionList.push({
+                        startX: i,
+                        startY: j,
+                        endY: 0,
+                        score: max,
+                        path: []
+                    })
+                } else if (mPathTable[i][j] === max) {
+                    solutionList.push({
+                        startX: i,
+                        startY: j,
+                        endY: 0,
+                        score: max,
+                        path: []
+                    })
+                }
+
+            }
+        }
+        traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[0], "local");
+       
+    }
+
+    function fittingAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
+        var width = mTopSequence.length + 1;
+        var height = mSideSequence.length + 1;
+
+        solutionList = [];
+
+        for (var i = 0; i < width; i++) {
+            mPathTable[i] = [];
+            for (var j = 0; j < height; j++) {
+                if (j === 0) {
+                    mPathTable[i][j] = 0;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j]
+                    };
+                    continue;
+                } else if (i === 0) {
+                    mPathTable[i][j] = j * gapScore;
+                    mCellMap[i + "_" + j] = {
+                        'winningScore': mPathTable[i][j],
+                        'direction': 'u'
+                    };
+                    continue;
+                }
+
+                var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
+                var comparisonScore = isMatch ? matchScore : mismatchScore;
+                var moveUpScore = mPathTable[i][j-1 ] + gapScore;
+                var moveSdScore = mPathTable[i-1][j] + gapScore;
+                var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
+                mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
+                var direction = [];
+
+                // TODO : decide on the order of the directions
+                if (mPathTable[i][j] === moveDgScore) {
+                    direction.push('d');
+                }
+
+                else if (mPathTable[i][j] === moveUpScore) {
+                    direction.push('u');
+                }
+
+                else if (mPathTable[i][j] === moveSdScore) {
+                    direction.push('s');
+                }
+
+                mCellMap[i + "_" + j] = {
+                    'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
+                    'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
+                    'diagonalScoreText': mPathTable[i - 1][j - 1] + " + " +
+                        parseInt(comparisonScore, 10) +
+                        " (Due to a " + (isMatch ? "match" : "mismatch") +
+                        " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
+                        " = " +
+                        moveDgScore,
+                    'sideScore': moveSdScore,
+                    'upScore': moveUpScore,
+                    'diagonalScore': moveDgScore,
+                    'winningScore': mPathTable[i][j],
+                    'direction': direction
+                };
+
+            }
+        }
+        let max = Number.NEGATIVE_INFINITY;
+        let maxI = 0;
+        for (var i = 0; i < width; i++) {
+            if (mPathTable[i][height - 1] > max) {
+                max = mPathTable[i][height - 1];
+                maxI = i;
+                solutionList = [];
+                solutionList.push({
+                    startX: maxI,
+                    startY: height - 1,
+                    endY: 0,
+                    score: max,
+                    path: []
+                })
+            } else if (mPathTable[i][height - 1] === max) {
+                solutionList.push({
+                    startX: i,
+                    startY: height - 1,
+                    endY: 0,
+                    score: max,
+                    path: []
+                })
+            }
+        }
+        traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[0]);
+    }
+
+    function traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solution) {
+    var i= solution.startX;
+    var j= solution.startY;
+    var new_v = []
+    var new_w = []
+    var path = []
+    path.push([i,j])
+
+    while(true){
+    
+        if(mCellMap[i+"_"+j].direction.includes('d')){
+            new_v.push(mTopSequence[i-1])
+            new_w.push(mSideSequence[j-1])
+            path.push([i-1,j-1])
+            i--;
+            j--;
+
+        }else if(mCellMap[i+"_"+j].direction.includes('s')){
+            new_v.push('-')
+            new_w.push(mSideSequence[i-1])
+            path.push([i-1,j])
+            i--;
+        }else if(mCellMap[i+"_"+j].direction.includes('u')){
+            new_v.push(mTopSequence[j-1])
+            new_w.push('-')
+            path.push([i,j-1])
+            j--;
+        } else if(mCellMap[i+"_"+j].direction.includes('z') && mAlignment === "local" && mCellMap[i+"_"+j].winningScore === 0){
+            break;
+        } 
+        if(mAlignment=== "fitting" && j<=0){
+            break;
+        }
+        else if(mAlignment!=="fitting" && (i<=0 || j<=0)){
+            break;
+        }
+      
+    }
+    solution.path = path;
+    solution.alignedSideSequence = new_w.reverse().join('');
+    solution.alignedTopSequence = new_v.reverse().join('');
+
+    }
+
+    function highlightOptimalPath(solutionEntry) {
+        for(var i=0;i<solutionEntry.path.length;i++){
+            // if(solutionEntry.path[i][0]>0 && solutionEntry.path[i][1]>0){
+                var currentCell = mCellMap[solutionEntry.path[i][0] + '_' + solutionEntry.path[i][1]];
+                var currentDom = $('#' + solutionEntry.path[i][0] + '_' + solutionEntry.path[i][1]);
+                currentDom.click();
+            // }
+           
+        }   
+        addPreviousAndNextButtons();
+    }
+
+    function addPreviousAndNextButtons(){
+        // remove the previous and next buttons if they exist
+        $('.prev-next').remove();
+
+        // add the previous and next buttons
+        var prevNextDiv = document.createElement("div");
+        prevNextDiv.className = "prev-next";
+        var prevButton = document.createElement("button");
+        prevButton.innerHTML = "Previous Solution";
+        prevButton.onclick = function(){
+            if(mCurrentSolutionIndex > 0){
+                mCurrentSolutionIndex--;
+                mCurrentPath = [];
+                $('.in-path').removeClass('in-path');   // remove all the highlighted path
+                // remove the class is-last from the table
+                $('.is-last').removeClass('is-last');
+                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex],"local");  
+                highlightOptimalPath(solutionList[mCurrentSolutionIndex]);
+            }
+        }
+        var nextButton = document.createElement("button");
+        nextButton.innerHTML = "Next Solution";
+        nextButton.onclick = function(){
+            if(mCurrentSolutionIndex < solutionList.length-1){
+                mCurrentSolutionIndex++;
+                mCurrentPath = [];
+                $('.in-path').removeClass('in-path');   // remove all the highlighted path
+                // remove the class is-last from the table
+                $('.is-last').removeClass('is-last');
+                traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[mCurrentSolutionIndex],"local");  
+                highlightOptimalPath(solutionList[mCurrentSolutionIndex]);
+            }
+        }
+        prevNextDiv.append(prevButton);
+        prevNextDiv.append(nextButton);
+        mDomResultContainer.append(prevNextDiv);
+    }
+
+
+
+
+
 
     mSelf = {
+        highlightPath: function () {
+          highlightOptimalPath(solutionList[0]); 
+        },
 
-        highlightOptimal: function() {
+        
+        // TODO: Add your own tracebacks for highlighting the path
+        // TODO: Add method to handle first solution for local and fitting
+        highlightOptimal: function () {
 
             mIsCustomPathMode = false;
             var width = mTopSequence.length + 1;
@@ -429,24 +820,28 @@ var GridBuilder = (function () {
                 var currentDom = $('#' + currentX + '_' + currentY);
 
                 currentDom.click();
-                
+
                 var direction = null;
-                if(currentCell.direction){
-                    direction = currentCell.direction[currentCell.direction.length-1];
+                if (currentCell.direction) {
+                    direction = currentCell.direction[currentCell.direction.length - 1];
                 }
 
-                if(direction === null) {
-                    if(currentX == 0) {
+                if (direction === null) {
+                    if (currentX == 0) {
                         direction = 'u';
                     }
-                    if(currentY == 0) {
+                    if (currentY == 0) {
                         direction = 's';
                     }
                 }
 
                 switch (direction) {
-                    case 's':  currentX--;  break;
-                    case 'u':  currentY--;  break;
+                    case 's':
+                        currentX--;
+                        break;
+                    case 'u':
+                        currentY--;
+                        break;
                     default:
                     case 'd':
                         currentX--;
@@ -454,20 +849,20 @@ var GridBuilder = (function () {
                         break;
                 }
 
-                
+
             }
 
         },
 
-        startCustomPath: function() {
-            this.rebuildTable(mDomContainer, mDomResultContainer, mMatchScore, mMismatchScore, mGapScore, mSideSequence, mTopSequence);
+        startCustomPath: function () {
+            this.rebuildTable(mDomContainer, mDomResultContainer, mMatchScore, mMismatchScore, mGapScore, mSideSequence, mTopSequence, mAlignment);
             mIsCustomPathMode = true;
         },
-
-        rebuildTable: function(domContainer, resultContainer, matchScore, mismatchScore, gapScore, seqSide, seqTop) {
-
+       
+        rebuildTable: function (domContainer, resultContainer, matchScore, mismatchScore, gapScore, seqSide, seqTop, alignment) {
+            mCurrentSolutionIndex = 0;
             if (mIsFirstCall) {
-                $(window).mousemove(function(e) {
+                $(window).mousemove(function (e) {
                     window.mouseXPos = e.pageX;
                     window.mouseYPos = e.pageY;
                 });
@@ -484,102 +879,16 @@ var GridBuilder = (function () {
             mMatchScore = matchScore;
             mMismatchScore = mismatchScore;
             mGapScore = gapScore;
-
+            mAlignment = alignment;
             var width = mTopSequence.length + 1;
             var height = mSideSequence.length + 1;
 
-            for (var i = 0; i < width; i++) {
-                mPathTable[i] = [];
-                for (var j = 0; j < height; j++) {
-
-                    if (i === 0 && j === 0) {
-                        mPathTable[i][j] = 0;
-                        mCellMap[i + "_" + j] = {
-                            'winningScore': mPathTable[i][j]
-                        };
-                        continue;
-                    }
-
-                    if (i === 0) {
-                        mPathTable[i][j] = j * gapScore;
-                        mCellMap[i + "_" + j] = {
-                            'winningScore': mPathTable[i][j]
-                        };
-                        continue;
-                    }
-
-                    if (j === 0) {
-                        mPathTable[i][j] = i * gapScore;
-                        mCellMap[i + "_" + j] = {
-                            'winningScore': mPathTable[i][j]
-                        };
-                        continue;
-                    }
-
-                    var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
-                    var comparisonScore = isMatch ? matchScore : mismatchScore;
-                    /*
-                    console.log(
-                        "Processing cell(" + i + ", " + j + ")\n" 
-                        + "Side score is " + (mPathTable[i-1][j] + gapScore) + "\n"
-                        + "Up score is " + (mPathTable[i][j-1] + gapScore) + "\n"
-                        + "Diag score is " + (comparisonScore + mPathTable[i-1][j-1]) + "\n"
-                    );
-                    */
-                    var moveUpScore = mPathTable[i][j - 1] + gapScore;
-                    var moveSdScore = mPathTable[i - 1][j] + gapScore;
-                    var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
-                    mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
-
-                    /*
-                    This is important when the values collide
-                    That is, we have two ways that both have the same score
-                    The PHP implemention does something that works which is
-                    
-                    It assigns the diagonal the lowest priority, then the up score and then the side scores
-                    
-                    */
-                    
-                    /*
-                    var direction = 'd';
-                    if (mPathTable[i][j] === moveUpScore) {
-                        direction = 'u';
-                    } else if (mPathTable[i][j] === moveSdScore) {
-                        direction = 's';
-                    }
-                    */
-
-                    var direction = [];
-
-                    if(mPathTable[i][j] === moveDgScore){
-                        direction.push('d');
-                    }
-                    
-                    if (mPathTable[i][j] === moveUpScore) {
-                        direction.push('u');
-                    }
-                    
-                    if (mPathTable[i][j] === moveSdScore) {
-                        direction.push('s');
-                    }
-                    
-                    mCellMap[i + "_" + j] = {
-                        'sideScoreText': mPathTable[i - 1][j] + " + " + gapScore + " (The Gap score) = " + moveSdScore,
-                        'upScoreText': mPathTable[i][j - 1] + " + " + gapScore + " (The Gap score) = " + moveUpScore,
-                        'diagonalScoreText': mPathTable[i - 1][j - 1]  + " + " +  
-                            parseInt(comparisonScore, 10) +
-                            " (Due to a " + (isMatch ? "match" : "mismatch") +
-                            " between " + mTopSequence[i - 1] + " & " + mSideSequence[j - 1] + ") " +
-                            " = " +
-                            moveDgScore,
-                        'sideScore': moveSdScore,
-                        'upScore': moveUpScore,
-                        'diagonalScore': moveDgScore,
-                        'winningScore': mPathTable[i][j],
-                        'direction': direction
-                    };
-
-                }
+            if (mAlignment == 'local') {
+                localAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence);
+            } else if (mAlignment == 'fitting') {
+                fittingAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence);
+            } else {
+                globalAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence);
             }
 
             constructGrid();
