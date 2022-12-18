@@ -22,6 +22,10 @@
         }
     }
 
+    clearResult = function () {
+        $('#result').html('');
+    }
+
     function clear() {
         var cont = $('#cont');
         var resultContainer = $('#result');
@@ -31,7 +35,7 @@
         var seqSide = $('#seq_1').val();
         var seqTop = $('#seq_2').val();
         var alignment = $('#Alignments').val();
-
+        clearResult();
         GridBuilder.rebuildTable(cont, resultContainer, matchScore, mismatchScore, gapScore, seqSide, seqTop,
         alignment);
     }
@@ -67,6 +71,7 @@
         });
 
         $('.btn-custom').click(function () {
+            clearResult();
             GridBuilder.startCustomPath();
         });
 

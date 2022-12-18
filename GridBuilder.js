@@ -117,7 +117,6 @@ var GridBuilder = (function () {
 
     function onPathUpdate() {
 
-        //console.log("Path Updated ========");
         var alignedTopSeq = '';
         var alignedSideSeq = '';
 
@@ -173,7 +172,6 @@ var GridBuilder = (function () {
 
         var $table = $('<table />').attr('id', 'alignment');
         mDomAlignmentTable = $table;
-        //mDomAlignmentTable.width( mDomGridTable.width() );
 
         var score = 0;
         // add row to show total number of solutions
@@ -404,8 +402,6 @@ var GridBuilder = (function () {
             if (x < 1 || y < 1) {
                 return;
             }
-            //console.log(           "#side_seq_" + (y -1));
-            //console.log(           "#top_seq_" + (x -1));
             $("#side_seq_" + (y - 1)).addClass('highlight');
             $("#top_seq_" + (x - 1)).addClass('highlight');
 
@@ -442,7 +438,6 @@ var GridBuilder = (function () {
     }
 
     function globalAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
-        console.log("globalAlignment");
         var width = mTopSequence.length + 1;
         var height = mSideSequence.length + 1;
         solutionList = [];
@@ -525,7 +520,6 @@ var GridBuilder = (function () {
     }
 
     function localAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
-        console.log("localAlignment");
         solutionList = [];
         var width = mTopSequence.length + 1;
         var height = mSideSequence.length + 1;
@@ -616,7 +610,6 @@ var GridBuilder = (function () {
     }
 
     function fittingAlignment(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence) {
-        console.log("fittingAlignment");
         var width = mTopSequence.length + 1;
         var height = mSideSequence.length + 1;
 
@@ -634,15 +627,16 @@ var GridBuilder = (function () {
                 } else if (i === 0) {
                     mPathTable[i][j] = j * gapScore;
                     mCellMap[i + "_" + j] = {
-                        'winningScore': mPathTable[i][j]
+                        'winningScore': mPathTable[i][j],
+                        'direction': 'u'
                     };
                     continue;
                 }
 
                 var isMatch = mTopSequence[i - 1] === mSideSequence[j - 1];
                 var comparisonScore = isMatch ? matchScore : mismatchScore;
-                var moveUpScore = mPathTable[i-1][j ] + gapScore;
-                var moveSdScore = mPathTable[i ][j-1] + gapScore;
+                var moveUpScore = mPathTable[i][j-1 ] + gapScore;
+                var moveSdScore = mPathTable[i-1][j] + gapScore;
                 var moveDgScore = parseInt(comparisonScore, 10) + parseInt(mPathTable[i - 1][j - 1]);
                 mPathTable[i][j] = Math.max(moveUpScore, moveSdScore, moveDgScore);
                 var direction = [];
@@ -702,12 +696,10 @@ var GridBuilder = (function () {
                 })
             }
         }
-        console.log(solutionList);
         traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solutionList[0]);
     }
 
-    function traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solution, algorithm) {
-        console.log("traceback");
+    function traceback(matchScore, mismatchScore, gapScore, mTopSequence, mSideSequence, solution) {
     var i= solution.startX;
     var j= solution.startY;
     var new_v = []
@@ -734,16 +726,17 @@ var GridBuilder = (function () {
             new_w.push('-')
             path.push([i,j-1])
             j--;
-        } else if(mCellMap[i+"_"+j].direction.includes('z') && algorithm === "local" && mCellMap[i+"_"+j].winningScore === 0){
+        } else if(mCellMap[i+"_"+j].direction.includes('z') && mAlignment === "local" && mCellMap[i+"_"+j].winningScore === 0){
+            break;
+        } 
+        if(mAlignment=== "fitting" && j<=0){
             break;
         }
-        if(i<=0 || j<=0){
+        else if(mAlignment!=="fitting" && (i<=0 || j<=0)){
             break;
         }
       
     }
-    console.log(path, new_v, 
-        new_w)
     solution.path = path;
     solution.alignedSideSequence = new_w.reverse().join('');
     solution.alignedTopSequence = new_v.reverse().join('');
@@ -751,7 +744,6 @@ var GridBuilder = (function () {
     }
 
     function highlightOptimalPath(solutionEntry) {
-        console.log("highlightOptimal");
         for(var i=0;i<solutionEntry.path.length;i++){
             // if(solutionEntry.path[i][0]>0 && solutionEntry.path[i][1]>0){
                 var currentCell = mCellMap[solutionEntry.path[i][0] + '_' + solutionEntry.path[i][1]];
