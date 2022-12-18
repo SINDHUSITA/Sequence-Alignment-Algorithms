@@ -176,7 +176,25 @@ var GridBuilder = (function () {
         //mDomAlignmentTable.width( mDomGridTable.width() );
 
         var score = 0;
+        // add row to show total number of solutions
         var $tr = $('<tr />');
+         // add underline to first row
+        $tr.addClass('underline');
+
+        // add cell spanning all columns to show total number of solutions
+        $tr.append($('<td />').attr('colspan', mSideSequence.length + 1).html('Total solutions: ' + solutionList.length));
+
+        $table.append($tr);
+       
+
+
+        // add row to show current solution number
+        $tr = $('<tr />');
+        $tr.append($('<td />').attr('colspan', mSideSequence.length + 1).html('Current solution: ' + (mCurrentSolutionIndex + 1)));
+        $table.append($tr);
+
+
+         $tr = $('<tr />');
         for (var idxSide in alignedSideSeq) {
             $tr.append($('<td />').html(alignedSideSeq[idxSide]));
         }
@@ -753,7 +771,7 @@ var GridBuilder = (function () {
         var prevNextDiv = document.createElement("div");
         prevNextDiv.className = "prev-next";
         var prevButton = document.createElement("button");
-        prevButton.innerHTML = "Previous";
+        prevButton.innerHTML = "Previous Solution";
         prevButton.onclick = function(){
             if(mCurrentSolutionIndex > 0){
                 mCurrentSolutionIndex--;
@@ -766,7 +784,7 @@ var GridBuilder = (function () {
             }
         }
         var nextButton = document.createElement("button");
-        nextButton.innerHTML = "Next";
+        nextButton.innerHTML = "Next Solution";
         nextButton.onclick = function(){
             if(mCurrentSolutionIndex < solutionList.length-1){
                 mCurrentSolutionIndex++;
