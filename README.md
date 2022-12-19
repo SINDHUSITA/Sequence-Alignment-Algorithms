@@ -21,3 +21,11 @@ and interpret phylogenetic trees.
 
 An interactive demo of the application can be viewed [here](https://639f95e5580637635f234415--stupendous-faloodeh-256a5a.netlify.app/).
 It is hosted using Netlify.
+
+## Screenshots from the tool:
+### Global Alignment
+![Global](https://github.com/SINDHUSITA/Sequence-Alignment-Algorithms/blob/master/demoImages/FirstPage.png)
+### Fitting Alignment with Multiple Paths
+![Fitting](https://github.com/SINDHUSITA/Sequence-Alignment-Algorithms/blob/master/demoImages/fittingCollage.jpg)
+### Local Alignment with Multiple Paths
+![Local](https://github.com/SINDHUSITA/Sequence-Alignment-Algorithms/blob/master/demoImages/localCollage.jpg)
