@@ -15,19 +15,9 @@ importance. Gene sequences are aligned to find regions of similarity, which may 
 the genes are related. Sequence alignments are also used in the field of phylogenetics to construct
 and interpret phylogenetic trees.
 
-###Limitations and Inspirations from existing webtools:
-(1) The [web tool](https://github.com/drdrsh/Needleman-Wunsch) is a very detailed and enhanced visualization with highly interactive
-Dynamic Programming table that not only displays the values but also gives the possible
-traceback direction from each cell. However, this tool is implementation of a single algorithm, Global alignment, which ideally produces a unique solution with a unique path and
-alignment.
-(2) [Another tool](https://github.com/Valiec/AlignmentVisualizer) that effectively implements multiple alignment algorithms is available for
-Global, Local and Fitting alignments. This also provides the feasibility of defining the custom
-scoring matrix, i.e. to define the match score and mismatch/gap penalties. On the downside,
-this implementation facilitates an alignment only with A,C,T,G characters, which might not
-be helpful for research and academic purposes. Another significant limitation and also a
-motivation in this project is that, for fitting and local alignments, it is possible that there
-can be multiple optimal paths based on the choice of start and end points in the traceback
-solution, which is not currently implemented in the tool.
+### Limitations and Inspirations from existing webtools:
+(1) The [web tool](https://github.com/drdrsh/Needleman-Wunsch) is a very detailed and enhanced visualization with highly interactive Dynamic Programming table that not only displays the values but also gives the possible traceback direction from each cell. However, this tool is implementation of a single algorithm, Global alignment, which ideally produces a unique solution with a unique path and alignment.
+(2) [Another tool](https://github.com/Valiec/AlignmentVisualizer) that effectively implements multiple alignment algorithms is available for Global, Local and Fitting alignments. This also provides the feasibility of defining the custom scoring matrix, i.e. to define the match score and mismatch/gap penalties. On the downside, this implementation facilitates an alignment only with A,C,T,G characters, which might not be helpful for research and academic purposes. Another significant limitation and also a motivation in this project is that, for fitting and local alignments, it is possible that there can be multiple optimal paths based on the choice of start and end points in the traceback solution, which is not currently implemented in the tool.
 
 An interactive demo of the application can be viewed [here](https://639f95e5580637635f234415--stupendous-faloodeh-256a5a.netlify.app/).
 It is hosted using Netlify.
